@@ -168,9 +168,7 @@ namespace FxProductMonitor
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            SendMail(); return;
-            //CompareProduct(); return;
-            //TongchengProducts(); return;
+            GetYuanFanProducts(); return;
             var handle = CreateThread(IntPtr.Zero, 0, TongchengProducts, IntPtr.Zero, 0, 0);
             UInt32 exitCode = 9999;
             GetExitCodeThread((IntPtr)handle, out exitCode);
@@ -847,6 +845,54 @@ namespace FxProductMonitor
             logBll.SetLogState();
             var mail = new SendMail();
             mail.Send(strTxt);
+        }
+        public string GetMd5(string str)
+        {
+            System.Security.Cryptography.MD5CryptoServiceProvider md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
+            byte[] md5bytes = System.Text.UTF8Encoding.Default.GetBytes(str);
+            byte[] output = md5.ComputeHash(md5bytes);
+            str = BitConverter.ToString(output, 4, 8);
+            str = str.Replace("-", "").ToLower();
+            return str;
+        }
+
+        public void GetYuanFanProducts()
+        {
+
+            string requestData = "";
+            requestData = "{\"Head\":{\"account\":\"亨亨票务\",\"SequenceId\":\"sid\",\"sign\":\"md5sign\",\"TimeStamp\":\"时间戳\",\"organization\":\"323\",\"method\":\"GetProduct\"},\"Body\":{";
+            requestData += "\"Data\": \"ALL\"}";
+            requestData = requestData.Replace("时间戳", DateTime.Now.ToString("yyyyMMddHHmmss"));
+            Random rnd = new Random();
+            string sid = rnd.Next(10000000, 99999999).ToString();
+            requestData = requestData.Replace("sid", sid);
+            requestData = requestData.Replace("md5sign", GetMd5("323" + sid + DateTime.Now.ToString("yyyyMMddHHmmss") + "D32B6CDBA001D645A6A346DA"));
+            requestData = FxProductMonitor.BLL.TCodeServiceCrypt.Encrypt3DESToBase64(requestData, "D70A690DD21ADD12DA1101A2");
+            string url = "http://pw.yfpw.cn/yfinterface/yfInterface.ashx";
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.ProtocolVersion = HttpVersion.Version11;
+
+            request.KeepAlive = true;
+            request.Headers.Add("Accept-Language", "zh-cn");
+            request.Accept = "*/*";
+            request.Method = "POST";
+            byte[] b = Encoding.UTF8.GetBytes(requestData);
+            request.ContentLength = b.Length;
+            request.ContentType = "application/x-www-form-urlencoded";
+            using (Stream sw = request.GetRequestStream())
+            {
+                sw.Write(b, 0, b.Length);
+            }
+
+            using (HttpWebResponse response = request.GetResponse() as HttpWebResponse)
+            {
+                using (StreamReader sr = new StreamReader(response.GetResponseStream(), Encoding.GetEncoding("gb2312")))
+                {
+                    string data = sr.ReadToEnd();
+                    SetTextValue(BLL.TCodeServiceCrypt.Decrypt3DESFromBase64(data, "D70A690DD21ADD12DA1101A2"));
+                    JsonConvert.DeserializeObject
+                }
+            }
         }
     }
 }
