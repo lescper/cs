@@ -168,7 +168,7 @@ namespace FxProductMonitor
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            GetYuanFanProducts(); return;
+            //GetYuanFanProducts(); return;
             var handle = CreateThread(IntPtr.Zero, 0, TongchengProducts, IntPtr.Zero, 0, 0);
             UInt32 exitCode = 9999;
             GetExitCodeThread((IntPtr)handle, out exitCode);
@@ -563,6 +563,25 @@ namespace FxProductMonitor
                                 Compare(mjldModel.SettlementPrice, 0, mjldModel.ActDate, mjldModel.RequireDate, "", model, "美景联动", "", "");
                                 break;
                             }
+
+                        case "10000184":
+                            {
+                                var yfpw = new BLL.YFPWProducts();
+                                var yfpwModel = new Model.YFPWProducts();
+                                yfpwModel = yfpw.GetModelByProductId(Convert.ToInt32(model.interfaceProdId));
+                                if (yfpwModel == null)
+                                {
+                                    var errLog = new logs();
+                                    errLog.log_category = 0;
+                                    errLog.log_date = DateTime.Now;
+                                    errLog.log_text = "【远帆票务】已下架。";
+                                    errLog.related_product = "【产品编号】：" + model.productNo.ToString() + "，【产品名称】：" + model.productName;
+                                    errLogBll.Add(errLog);
+                                    break;
+                                }
+                                Compare(yfpwModel.product_platformvalue, 0, yfpwModel.product_start, yfpwModel.product_end, "", model, "远帆票务", "", "");
+                                break;
+                            }
                     }
                 }
             }
@@ -858,7 +877,8 @@ namespace FxProductMonitor
 
         public void GetYuanFanProducts()
         {
-
+            FxProductMonitor.BLL.YFPWProducts yfBll = new BLL.YFPWProducts();
+            yfBll.SetProductState();
             string requestData = "";
             requestData = "{\"Head\":{\"account\":\"亨亨票务\",\"SequenceId\":\"sid\",\"sign\":\"md5sign\",\"TimeStamp\":\"时间戳\",\"organization\":\"323\",\"method\":\"GetProduct\"},\"Body\":{";
             requestData += "\"Data\": \"ALL\"}";
@@ -889,10 +909,112 @@ namespace FxProductMonitor
                 using (StreamReader sr = new StreamReader(response.GetResponseStream(), Encoding.GetEncoding("gb2312")))
                 {
                     string data = sr.ReadToEnd();
-                    SetTextValue(BLL.TCodeServiceCrypt.Decrypt3DESFromBase64(data, "D70A690DD21ADD12DA1101A2"));
-                    JsonConvert.DeserializeObject
+                    data = FxProductMonitor.BLL.TCodeServiceCrypt.Decrypt3DESFromBase64(data, "D70A690DD21ADD12DA1101A2");
+                    data = data.Substring(data.IndexOf("\"Body\":[") + 7);
+                    data = data.Substring(0, data.Length - 1);
+                    data = data.Replace("]}", "\"}");
+                    data = data.Replace("product_imgs\":[", "product_imgs\":\"");
+                    List<Model.YFPWProducts> list = JsonConvert.DeserializeObject<List<Model.YFPWProducts>>(data);
+                    foreach (var model in list)
+                    {
+                        model.product_Introduction = "";
+                        if (yfBll.GetModelByProductId(Convert.ToInt32(model.product_id)) != null)
+                        {
+                            model.id = yfBll.GetModelByProductId(Convert.ToInt32(model.product_id)).id;
+                            yfBll.Update(model);
+                        }
+                        else
+                        {
+                            yfBll.Add(model);
+                        }
+                    }
+                    sr.Close();
+                    response.Close();
                 }
             }
+
+            List<FxProductMonitor.Model.YFPWProducts> deletedList = yfBll.GetModelList("updated=0");
+            foreach (var model in deletedList)
+            {
+                yfBll.Delete(model.id);
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            FileStream fs = new FileStream("d:\\1.txt", FileMode.Create);
+            StreamWriter sw = new StreamWriter(fs);
+            switch (comboBox5.Text)
+            {
+                case "同程旅游":
+                    {
+                        FxProductMonitor.BLL.Tickets tickets = new Tickets();
+                        List<Model.Tickets> ticketsList = new List<Model.Tickets>();
+                        ticketsList = tickets.GetModelList("ticketPriceId not in(select cast(replace(interfaceProdId,'	','') as int) from ProductList where interfaceId=10000218)");
+
+                        foreach (var model in ticketsList)
+                        {
+                            sw.Write(model.sceneryName + "\r\n");
+                        }
+
+
+                        break;
+
+                    }
+                case "远帆票务":
+                    {
+                        FxProductMonitor.BLL.YFPWProducts yfpw = new BLL.YFPWProducts();
+                        List<Model.YFPWProducts> yfpwList = new List<Model.YFPWProducts>();
+                        yfpwList = yfpw.GetModelList("product_id not in(select cast(replace(interfaceProdId,'	','') as int) from ProductList where interfaceId=10000184)");
+                        foreach (var model in yfpwList)
+                        {
+                            sw.Write(model.scenic_name + "\r\n");
+                        }
+                        break;
+                    }
+                case "美景联动":
+                    {
+                        FxProductMonitor.BLL.MJLDProducts mjld = new MJLDProducts();
+                        List<Model.MJLDProducts> mjldList = new List<Model.MJLDProducts>();
+                        mjldList = mjld.GetModelList("Id not in(select cast(replace(interfaceProdId,'	','') as int) from ProductList where interfaceId=10000210)");
+                        foreach (var model in mjldList)
+                        {
+                            sw.Write(model.Name + "\r\n");
+                        }
+                        break;
+                    }
+            }
+            sw.Flush();
+            sw.Close();
+            fs.Close();
+            MessageBox.Show("保存文件成功。");
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            string url = "http://www.ddrtty.net/bjskiService.action?xml=";
+            url += "<business_trans><request_type>getProduct_request</request_type><organization>2014092014520877</organization><pageIndex>1</pageIndex></business_trans>";
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+            request.KeepAlive = false;
+            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+            Stream stream = response.GetResponseStream();
+            StreamReader sr = new StreamReader(stream, Encoding.GetEncoding("gb2312"));
+            string data = sr.ReadToEnd();
+            data = data.Substring(data.IndexOf("<products>"));
+            data = data.Substring(0, data.IndexOf("</business_trans>"));
+            //data = "<?xml version=\"1.0\"?><ArrayOfDadongProducts xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">" + data;
+            data = data.Replace("products", "ArrayOfDadongProducts");
+            data = data.Replace("<product>", "<DadongProducts>");
+            data = data.Replace("</product>", "</DadongProducts>");
+            //data = data.Replace("<ArrayOfDadongProducts>", "");
+
+            stream.Position = 0;
+            System.Xml.Serialization.XmlSerializer xmlSerializer = new System.Xml.Serialization.XmlSerializer(typeof(List<FxProductMonitor.Model.DadongProducts>));
+            List<FxProductMonitor.Model.DadongProducts> list = xmlSerializer.Deserialize(stream) as List<FxProductMonitor.Model.DadongProducts>;
+            sr.Close();
+            stream.Close();
+            response.Close();
+            SetTextValue(data);
         }
     }
 }

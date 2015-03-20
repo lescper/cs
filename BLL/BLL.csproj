@@ -46,6 +46,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Class1.cs" />
+    <Compile Include="DadongProducts.cs" />
     <Compile Include="GetHtml.cs" />
     <Compile Include="GetPrice.cs" />
     <Compile Include="GetProduct.cs" />
@@ -59,6 +60,7 @@
     <Compile Include="TCodeServiceCrypt.cs" />
     <Compile Include="Tickets.cs" />
     <Compile Include="UTS.cs" />
+    <Compile Include="YFPWProducts.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DAL\DAL.csproj">

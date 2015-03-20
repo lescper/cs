@@ -6,7 +6,7 @@
 *
 * Ver    变更日期             负责人  变更内容
 * ───────────────────────────────────
-* V0.01  2015-03-19 16:19:30   N/A    初版
+* V0.01  2015-03-19 17:10:10   N/A    初版
 *
 * Copyright (c) 2012 Maticsoft Corporation. All rights reserved.
 *┌──────────────────────────────────┐
@@ -26,6 +26,7 @@ namespace FxProductMonitor.Model
 		public YFPWProducts()
 		{}
 		#region Model
+		private int _id;
 		private int? _product_id;
 		private string _product_name;
 		private string _product_facevalue;
@@ -48,6 +49,14 @@ namespace FxProductMonitor.Model
 		private string _product_limitday;
 		private string _product_imgs;
 		private int? _updated;
+		/// <summary>
+		/// 
+		/// </summary>
+		public int id
+		{
+			set{ _id=value;}
+			get{return _id;}
+		}
 		/// <summary>
 		/// 
 		/// </summary>
