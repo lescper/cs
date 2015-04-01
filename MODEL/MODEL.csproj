@@ -49,6 +49,7 @@
     <Compile Include="Products.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tickets.cs" />
+    <Compile Include="XieProducts.cs" />
     <Compile Include="YFPWProducts.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

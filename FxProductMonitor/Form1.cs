@@ -18,6 +18,7 @@ using ProductList = FxProductMonitor.Model.ProductList;
 using Products = FxProductMonitor.BLL.Products;
 using ThreadState = System.Threading.ThreadState;
 using Tickets = FxProductMonitor.BLL.Tickets;
+using System.Security.Cryptography;
 
 namespace FxProductMonitor
 {
@@ -36,6 +37,7 @@ namespace FxProductMonitor
         private void button1_Click(object sender, EventArgs e)
         {
             notifyIcon1.Dispose();
+            PostQuitMessage(0);
             Environment.Exit(0);
             Application.Exit();
         }
@@ -44,7 +46,6 @@ namespace FxProductMonitor
         {
             try
             {
-                SetTextValue("开始更新同程产品。");
                 var newProductCount = 0;
                 var totalCount = 0;
                 var pageIndex = 1;
@@ -101,10 +102,10 @@ namespace FxProductMonitor
                         }
                     }
                 }
-                SetTextValue("更新完毕，统计并清理产品。");
-                var deletedProduct = bll.GetRecordCount("updated <= 0");
-                msg += "更新产品：" + totalCount + "。已经下架的产品：" + deletedProduct + "。";
-                SetTextValue("同程产品更新结束，更新产品数量：" + totalCount + "，已下架的产品数量：" + deletedProduct);
+                //SetTextValue("更新完毕，统计并清理产品。");
+                //var deletedProduct = bll.GetRecordCount("updated <= 0");
+                //msg += "更新产品：" + totalCount + "。已经下架的产品：" + deletedProduct + "。";
+                //SetTextValue("同程产品更新结束，更新产品数量：" + totalCount + "，已下架的产品数量：" + deletedProduct);
                 var deletedList = bll.GetModelList("updated <= 0");
                 if (deletedList.Count != 0)
                 {
@@ -112,12 +113,12 @@ namespace FxProductMonitor
                     {
                         msg += m.ticketName;
                         bll.Delete(m.id);
-                        SetTextValue(m.ticketName);
+                        //SetTextValue(m.ticketName);
                     }
                 }
-                var log = new logs { related_product = "", log_text = msg, log_date = DateTime.Now };
-                var logsBll = new BLL.logs();
-                logsBll.Add(log);
+                //var log = new logs { related_product = "", log_text = msg, log_date = DateTime.Now };
+                //var logsBll = new BLL.logs();
+                //logsBll.Add(log);
                 SetTextValue("同程产品操作完毕。");
             }
             catch (Exception ex)
@@ -168,7 +169,7 @@ namespace FxProductMonitor
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            //GetYuanFanProducts(); return;
+            #region 同程
             var handle = CreateThread(IntPtr.Zero, 0, TongchengProducts, IntPtr.Zero, 0, 0);
             UInt32 exitCode = 9999;
             GetExitCodeThread((IntPtr)handle, out exitCode);
@@ -177,8 +178,9 @@ namespace FxProductMonitor
                 Application.DoEvents();
                 GetExitCodeThread((IntPtr)handle, out exitCode);
             }
+            #endregion
 
-            SetTextValue("开始更新美景联动数据。");
+            #region 美景联动
             var getUtsThread = new Thread(GetUtsProduct);
             getUtsThread.Start();
             while (getUtsThread.ThreadState != ThreadState.Stopped)
@@ -186,13 +188,44 @@ namespace FxProductMonitor
                 Application.DoEvents();
             }
             SetTextValue("美景联动数据更新结束。");
+            #endregion
 
+            #region 大东票务
+            var getDadongThread = new Thread(GetDadongProduct);
+            getDadongThread.Start();
+            while (getDadongThread.ThreadState != ThreadState.Stopped)
+            {
+                Application.DoEvents();
+            }
+            SetTextValue("大东票务数据更新结束。");
+            #endregion
+
+            #region 远帆票务
+            var getYFThread = new Thread(GetYuanFanProducts);
+            getYFThread.Start();
+            while (getYFThread.ThreadState != ThreadState.Stopped)
+            {
+                Application.DoEvents();
+            }
+            SetTextValue("远帆票务数据更新结束。");
+            #endregion
+
+            #region 谢谢票务
+            GetXieProducts();
+            SetTextValue("谢谢票务操作完成。");
+            #endregion
+
+            #region 更新产品
             GetProductApi();
             SetTextValue("获取产品结束。");
+            #endregion
 
+            #region 价格日期
             GetProductInfo();
             SetTextValue("获取价格日期结束。");
+            #endregion
 
+            #region 对比产品
             var compareThread = new Thread(CompareProduct);
             compareThread.Start();
             while (compareThread.ThreadState != ThreadState.Stopped)
@@ -200,9 +233,11 @@ namespace FxProductMonitor
                 Application.DoEvents();
             }
             SetTextValue("产品对比已完成。");
+            #endregion
 
-
+            #region 发送邮件
             SendMail();
+            #endregion
         }
 
         private void button3_Click(object sender, EventArgs e)
@@ -224,6 +259,10 @@ namespace FxProductMonitor
         static extern IntPtr InternetOpen(
            string lpszAgent, int dwAccessType, string lpszProxyName,
            string lpszProxyBypass, int dwFlags);
+
+        [DllImport("user32.dll")]
+        static extern void PostQuitMessage(int nExitCode);
+
 
         private void button4_Click(object sender, EventArgs e)
         {
@@ -528,6 +567,7 @@ namespace FxProductMonitor
                     {
                         case "10000218":
                             {
+                                #region 同程票务
                                 var ticketsBll = new Tickets();
                                 var ticketsModel = ticketsBll.GetModelByTicketId(Convert.ToInt32(model.interfaceProdId));
                                 if (ticketsModel == null)
@@ -543,10 +583,12 @@ namespace FxProductMonitor
                                 Compare(ticketsModel.agentPrice, Convert.ToInt32(ticketsModel.reserveBeforeDays), ticketsModel.startSellDate, ticketsModel.effectiveEndDate, ticketsModel.isRealName, model, "同程", ticketsModel.exceptDate, ticketsModel.stopSellDate);
                                 totalCount++;
                                 break;
+                                #endregion
                             }
 
                         case "10000210":
                             {
+                                #region 美景联动
                                 var uts = new MJLDProducts();
                                 var mjldModel = new Model.MJLDProducts();
                                 mjldModel = uts.GetModelById(Convert.ToInt32(model.interfaceProdId));
@@ -562,10 +604,12 @@ namespace FxProductMonitor
                                 }
                                 Compare(mjldModel.SettlementPrice, 0, mjldModel.ActDate, mjldModel.RequireDate, "", model, "美景联动", "", "");
                                 break;
+                                #endregion
                             }
 
                         case "10000184":
                             {
+                                #region 远帆票务
                                 var yfpw = new BLL.YFPWProducts();
                                 var yfpwModel = new Model.YFPWProducts();
                                 yfpwModel = yfpw.GetModelByProductId(Convert.ToInt32(model.interfaceProdId));
@@ -581,6 +625,64 @@ namespace FxProductMonitor
                                 }
                                 Compare(yfpwModel.product_platformvalue, 0, yfpwModel.product_start, yfpwModel.product_end, "", model, "远帆票务", "", "");
                                 break;
+                                #endregion
+                            }
+                        case "10000212":
+                            {
+                                #region 大东票务
+                                var dadongBll = new BLL.DadongProducts();
+                                var dadongModel = new Model.DadongProducts();
+                                dadongModel = dadongBll.GetModelByProductId(Convert.ToInt32(model.interfaceProdId));
+                                if (dadongModel == null)
+                                {
+                                    var errLog = new logs();
+                                    errLog.log_category = 0;
+                                    errLog.log_date = DateTime.Now;
+                                    errLog.log_text = "【大东票务】已下架。";
+                                    errLog.related_product = "【产品编号】：" + model.productNo.ToString() + "，【产品名称】：" + model.productName;
+                                    errLogBll.Add(errLog);
+                                    break;
+                                }
+                                Compare(dadongModel.product_platformValue, 0, "", dadongModel.product_expireTime, "", model, "大东票务", "", "");
+                                break;
+                                #endregion
+                            }
+
+                        case "10000238":
+                            {
+                                #region 谢谢网
+                                var merchBll = new BLL.XieProducts();
+                                var merchModel = new Model.XieProducts();
+                                merchModel = merchBll.GetModelByProductId(Convert.ToInt32(model.interfaceProdId));
+                                if (merchModel == null)
+                                {
+                                    var errLog = new logs();
+                                    errLog.log_category = 0;
+                                    errLog.log_date = DateTime.Now;
+                                    errLog.log_text = "【谢谢网】已下架。";
+                                    errLog.related_product = "【产品编号】：" + model.productNo.ToString() + "，【产品名称】：" + model.productName;
+                                    errLogBll.Add(errLog);
+                                    break;
+                                }
+                                string selelPrice = merchModel.SellPrice;
+                                string expiredTime = merchModel.ValidTime;
+                                string stopSellTime = merchModel.MerchDownTime;
+                                if (expiredTime.IndexOf("自购买之日起") >= 0)
+                                {
+                                    expiredTime = "";
+                                }
+                                if (expiredTime.IndexOf("无限") >= 0)
+                                {
+                                    expiredTime = DateTime.Now.AddYears(10).ToString("yyyy-MM-dd");
+                                }
+                                if (stopSellTime.IndexOf("不限") >= 0)
+                                {
+                                    stopSellTime = DateTime.Now.AddYears(10).ToString("yyyy-MM-dd");
+                                }
+                                Compare(selelPrice, 0, "", expiredTime, "", model, "谢谢网", "", stopSellTime);
+                                break;
+
+                                #endregion
                             }
                     }
                 }
@@ -593,8 +695,20 @@ namespace FxProductMonitor
             var logBll = new BLL.logs();
             var logsModel = new logs();
 
-            var startDt = Convert.ToDateTime(startDate);
-            var endDt = Convert.ToDateTime(endDate);
+            DateTime startDt;
+            if (!string.IsNullOrEmpty(startDate))
+                startDt = Convert.ToDateTime(startDate);
+            else
+                startDt = DateTime.Now.AddYears(-10);
+            DateTime endDt;
+            if (!string.IsNullOrEmpty(endDate))
+            {
+                endDt = Convert.ToDateTime(endDate);
+            }
+            else
+            {
+                endDt = DateTime.Now.AddYears(-10);
+            }
 
             if (DateTime.Compare(startDt, DateTime.Now) > 0)
             {
@@ -940,6 +1054,69 @@ namespace FxProductMonitor
             }
         }
 
+        public void GetDadongProduct()
+        {
+            int pageIndex = 1;
+            FxProductMonitor.BLL.DadongProducts bll = new BLL.DadongProducts();
+            bll.SetProductState();
+            while (true)
+            {
+                string url = "http://www.ddrtty.net/bjskiService.action?xml=";
+                url += "<business_trans><request_type>getProduct_request</request_type><organization>2014092014520877</organization><pageIndex>" + pageIndex + "</pageIndex></business_trans>";
+                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+                request.KeepAlive = false;
+                HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                Stream stream = response.GetResponseStream();
+                StreamReader sr = new StreamReader(stream, Encoding.GetEncoding("gb2312"));
+                string data = sr.ReadToEnd();
+                if (data.IndexOf("</response_type><products></products></business_trans>") >= 0)
+                {
+                    break;
+                }
+
+                data = data.Substring(data.IndexOf("<products>"));
+                data = data.Substring(0, data.IndexOf("</business_trans>"));
+                data = data.Replace("products", "ArrayOfDadongProducts");
+                data = data.Replace("<product>", "<DadongProducts>");
+                data = data.Replace("</product>", "</DadongProducts>");
+                data = "<?xml version=\"1.0\"?>" + data;
+                data = data.Replace("<ArrayOfDadongProducts>", "<ArrayOfDadongProducts xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">");
+                data = data.Replace("null", "0");
+                data = data.Replace("\n", "");
+                data = data.Replace("\r", "");
+                data = data.Replace("&nbsp;", "");
+                StringReader reader = new StringReader(data);
+                System.Xml.Serialization.XmlSerializer xmlSerializer = new System.Xml.Serialization.XmlSerializer(typeof(List<FxProductMonitor.Model.DadongProducts>));
+                List<FxProductMonitor.Model.DadongProducts> list = xmlSerializer.Deserialize(reader) as List<FxProductMonitor.Model.DadongProducts>;
+
+                sr.Close();
+                stream.Close();
+                response.Close();
+                reader.Close();
+
+                foreach (var model in list)
+                {
+                    model.updated = 1;
+                    int iProductId = bll.GetModelId(Convert.ToInt32(model.product_id));
+                    if (iProductId <= 0)
+                    {
+                        bll.Add(model);
+                    }
+                    else
+                    {
+                        model.id = iProductId;
+                        bll.Add(model);
+                    }
+                }
+                pageIndex++;
+            }
+            List<FxProductMonitor.Model.DadongProducts> listOfDaDongDeleted = bll.GetModelList("updated=0");
+            foreach (var model in listOfDaDongDeleted)
+            {
+                bll.Delete(model.id);
+            }
+        }
+
         private void button5_Click(object sender, EventArgs e)
         {
             FileStream fs = new FileStream("d:\\1.txt", FileMode.Create);
@@ -992,29 +1169,111 @@ namespace FxProductMonitor
 
         private void button6_Click(object sender, EventArgs e)
         {
-            string url = "http://www.ddrtty.net/bjskiService.action?xml=";
-            url += "<business_trans><request_type>getProduct_request</request_type><organization>2014092014520877</organization><pageIndex>1</pageIndex></business_trans>";
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-            request.KeepAlive = false;
-            HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-            Stream stream = response.GetResponseStream();
-            StreamReader sr = new StreamReader(stream, Encoding.GetEncoding("gb2312"));
-            string data = sr.ReadToEnd();
-            data = data.Substring(data.IndexOf("<products>"));
-            data = data.Substring(0, data.IndexOf("</business_trans>"));
-            //data = "<?xml version=\"1.0\"?><ArrayOfDadongProducts xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">" + data;
-            data = data.Replace("products", "ArrayOfDadongProducts");
-            data = data.Replace("<product>", "<DadongProducts>");
-            data = data.Replace("</product>", "</DadongProducts>");
-            //data = data.Replace("<ArrayOfDadongProducts>", "");
+            //SetTextValue(webBrowser1.Document.Cookie);
+            GetXieProducts();
+        }
 
-            stream.Position = 0;
-            System.Xml.Serialization.XmlSerializer xmlSerializer = new System.Xml.Serialization.XmlSerializer(typeof(List<FxProductMonitor.Model.DadongProducts>));
-            List<FxProductMonitor.Model.DadongProducts> list = xmlSerializer.Deserialize(stream) as List<FxProductMonitor.Model.DadongProducts>;
-            sr.Close();
-            stream.Close();
-            response.Close();
-            SetTextValue(data);
+        [DllImport("wininet.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        static extern bool InternetSetCookie(string lpszUrl, string lpszCookieName, string lpszCookieData);
+
+        /// <summary>
+        /// 谢谢网产品获取
+        /// Cookie抓取总是失效，使用WebBrowser抓取。
+        /// </summary>
+        public void GetXieProducts()
+        {
+            WebBrowser webBrowser1 = new WebBrowser();
+            CookieContainer cookieContainer = new CookieContainer();
+            InternetSetCookie("http://www.xiexie.com.cn", "user", "firebirdwz-hbbw2014");
+            webBrowser1.Navigate("http://www.xiexie.com.cn");
+            while (webBrowser1.ReadyState != WebBrowserReadyState.Complete)
+            {
+                Application.DoEvents();
+            }
+            for (int i = 0; i < 10000000; i++)
+            {
+                Application.DoEvents();
+            }
+            FxProductMonitor.BLL.XieProducts merchBll = new BLL.XieProducts();
+            int pageIndex = 0;
+            while (true)
+            {
+                string url = "http://www.xiexie.com.cn/disManage/allMerch.action?state=0&putaway=1&pageNo=";
+                pageIndex++;
+                webBrowser1.Navigate(url + pageIndex.ToString());
+                while (webBrowser1.ReadyState != WebBrowserReadyState.Complete)
+                {
+                    Application.DoEvents();
+                }
+                string[] seperators = new string[] { "</tr><tr>" };
+                string data = webBrowser1.DocumentText;
+                if (data.IndexOf("<th>操作</th>") <= 0)
+                {
+                    break;
+                }
+                data = data.Substring(data.IndexOf("<th>操作</th>"));
+                data = data.Substring(data.IndexOf("</tr>"));
+                data = data.Substring(0, data.IndexOf("</table>"));
+                data = data.Replace("\r\n", "");
+                data = data.Replace("\t", "");
+                if (data.IndexOf("action?merchID") < 0)
+                {
+                    break;
+                }
+                foreach (var oneColumn in data.Split(seperators, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (oneColumn.IndexOf("action?merchID") < 0) continue;
+                    string effectiveDate = "", stopSellDate = "", marketPrice = "", advisePrice = "", agentPrice = "", productId = "";
+                    string productName = oneColumn.Substring(oneColumn.IndexOf("action?merchID="));
+                    productName = productName.Substring(productName.IndexOf(">") + 1);
+                    productName = productName.Substring(0, productName.IndexOf("</a>"));
+                    effectiveDate = oneColumn.Substring(oneColumn.IndexOf("+</a></td>") + 6);
+                    effectiveDate = effectiveDate.Substring(effectiveDate.IndexOf("至") + 1);
+                    stopSellDate = effectiveDate;
+                    effectiveDate = effectiveDate.Substring(0, effectiveDate.IndexOf("</td>"));
+                    stopSellDate = stopSellDate.Substring(stopSellDate.IndexOf("</td><td>") + 9);
+                    marketPrice = stopSellDate;
+                    stopSellDate = stopSellDate.Substring(0, stopSellDate.IndexOf("</td>"));
+                    marketPrice = marketPrice.Substring(marketPrice.IndexOf("</td><td>") + 9);
+                    advisePrice = marketPrice;
+                    marketPrice = marketPrice.Substring(0, marketPrice.IndexOf("</td>"));
+                    advisePrice = advisePrice.Substring(advisePrice.IndexOf("</td><td>") + 9);
+                    agentPrice = advisePrice;
+                    advisePrice = advisePrice.Substring(0, advisePrice.IndexOf("</td>"));
+                    agentPrice = agentPrice.Replace(" class=\"cf00\"", "");
+                    productId = agentPrice;
+                    agentPrice = agentPrice.Substring(agentPrice.IndexOf("</td><td>") + 9);
+                    agentPrice = agentPrice.Substring(0, agentPrice.IndexOf("</td>"));
+                    productId = productId.Substring(productId.IndexOf("copyRight") + 10);
+                    productId = productId.Substring(0, productId.IndexOf(")"));
+                    if (merchBll.GetModelByProductId(Convert.ToInt32(productId)) != null)
+                    {
+                        FxProductMonitor.Model.XieProducts newProduct = merchBll.GetModelByProductId(Convert.ToInt32(productId));
+                        newProduct.MerchName = productName;
+                        newProduct.ValidTime = effectiveDate.Replace("/td><td>", "");
+                        newProduct.MerchDownTime = stopSellDate;
+                        newProduct.SellPrice = agentPrice.Replace("元", "");
+                        newProduct.CostPrice = marketPrice.Replace("元", "");
+                        newProduct.AdvisePrice = advisePrice.Replace("元", "");
+                        newProduct.Updated = 1;
+                        merchBll.Update(newProduct);
+                    }
+                    else
+                    {
+                        FxProductMonitor.Model.XieProducts newProduct = new Model.XieProducts();
+                        newProduct.MerchName = productName;
+                        newProduct.ValidTime = effectiveDate.Replace("/td><td>", "");
+                        newProduct.MerchDownTime = stopSellDate;
+                        newProduct.SellPrice = agentPrice.Replace("元", "");
+                        newProduct.CostPrice = marketPrice.Replace("元", "");
+                        newProduct.AdvisePrice = advisePrice.Replace("元", "");
+                        newProduct.Updated = 1;
+                        newProduct.MerchID = Convert.ToInt32(productId);
+                        merchBll.Add(newProduct);
+                    }
+                }
+            }
+            webBrowser1.Dispose();
         }
     }
 }

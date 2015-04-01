@@ -6,7 +6,7 @@
 *
 * Ver    变更日期             负责人  变更内容
 * ───────────────────────────────────
-* V0.01  2015-03-20 17:04:55   N/A    初版
+* V0.01  2015-03-23 14:04:37   N/A    初版
 *
 * Copyright (c) 2012 Maticsoft Corporation. All rights reserved.
 *┌──────────────────────────────────┐
@@ -26,7 +26,7 @@ namespace FxProductMonitor.Model
 		public DadongProducts()
 		{}
 		#region Model
-		private int? _id;
+		private int _id;
 		private int? _product_id;
 		private string _category;
 		private string _product_name;
@@ -46,14 +46,15 @@ namespace FxProductMonitor.Model
 		private int? _product_pretimelimittype;
 		private int? _product_hasmaxmobilelimit;
 		private int? _product_refundset;
-		private int? _product_refundtype;
+		private string _product_refundtype;
 		private string _product_refundpoundagetype;
 		private string _product_refundpoundage;
 		private string _whentimepre;
+		private int? _updated;
 		/// <summary>
 		/// 
 		/// </summary>
-		public int? id
+		public int id
 		{
 			set{ _id=value;}
 			get{return _id;}
@@ -213,7 +214,7 @@ namespace FxProductMonitor.Model
 		/// <summary>
 		/// 
 		/// </summary>
-		public int? product_refundType
+		public string product_refundType
 		{
 			set{ _product_refundtype=value;}
 			get{return _product_refundtype;}
@@ -241,6 +242,14 @@ namespace FxProductMonitor.Model
 		{
 			set{ _whentimepre=value;}
 			get{return _whentimepre;}
+		}
+		/// <summary>
+		/// 
+		/// </summary>
+		public int? updated
+		{
+			set{ _updated=value;}
+			get{return _updated;}
 		}
 		#endregion Model
 

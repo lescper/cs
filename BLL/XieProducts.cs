@@ -1,12 +1,12 @@
 ﻿/**  版本信息模板在安装目录下，可自行修改。
-* DadongProducts.cs
+* XieProducts.cs
 *
 * 功 能： N/A
-* 类 名： DadongProducts
+* 类 名： XieProducts
 *
 * Ver    变更日期             负责人  变更内容
 * ───────────────────────────────────
-* V0.01  2015-03-23 14:04:37   N/A    初版
+* V0.01  2015-03-24 13:49:30   N/A    初版
 *
 * Copyright (c) 2012 Maticsoft Corporation. All rights reserved.
 *┌──────────────────────────────────┐
@@ -21,12 +21,12 @@ using FxProductMonitor.Model;
 namespace FxProductMonitor.BLL
 {
     /// <summary>
-    /// DadongProducts
+    /// XieProducts
     /// </summary>
-    public partial class DadongProducts
+    public partial class XieProducts
     {
-        private readonly FxProductMonitor.DAL.DadongProducts dal = new FxProductMonitor.DAL.DadongProducts();
-        public DadongProducts()
+        private readonly FxProductMonitor.DAL.XieProducts dal = new FxProductMonitor.DAL.XieProducts();
+        public XieProducts()
         { }
         #region  BasicMethod
 
@@ -49,7 +49,7 @@ namespace FxProductMonitor.BLL
         /// <summary>
         /// 增加一条数据
         /// </summary>
-        public int Add(FxProductMonitor.Model.DadongProducts model)
+        public int Add(FxProductMonitor.Model.XieProducts model)
         {
             return dal.Add(model);
         }
@@ -57,7 +57,7 @@ namespace FxProductMonitor.BLL
         /// <summary>
         /// 更新一条数据
         /// </summary>
-        public bool Update(FxProductMonitor.Model.DadongProducts model)
+        public bool Update(FxProductMonitor.Model.XieProducts model)
         {
             return dal.Update(model);
         }
@@ -81,7 +81,7 @@ namespace FxProductMonitor.BLL
         /// <summary>
         /// 得到一个对象实体
         /// </summary>
-        public FxProductMonitor.Model.DadongProducts GetModel(int id)
+        public FxProductMonitor.Model.XieProducts GetModel(int id)
         {
 
             return dal.GetModel(id);
@@ -104,7 +104,7 @@ namespace FxProductMonitor.BLL
         /// <summary>
         /// 获得数据列表
         /// </summary>
-        public List<FxProductMonitor.Model.DadongProducts> GetModelList(string strWhere)
+        public List<FxProductMonitor.Model.XieProducts> GetModelList(string strWhere)
         {
             DataSet ds = dal.GetList(strWhere);
             return DataTableToList(ds.Tables[0]);
@@ -112,13 +112,13 @@ namespace FxProductMonitor.BLL
         /// <summary>
         /// 获得数据列表
         /// </summary>
-        public List<FxProductMonitor.Model.DadongProducts> DataTableToList(DataTable dt)
+        public List<FxProductMonitor.Model.XieProducts> DataTableToList(DataTable dt)
         {
-            List<FxProductMonitor.Model.DadongProducts> modelList = new List<FxProductMonitor.Model.DadongProducts>();
+            List<FxProductMonitor.Model.XieProducts> modelList = new List<FxProductMonitor.Model.XieProducts>();
             int rowsCount = dt.Rows.Count;
             if (rowsCount > 0)
             {
-                FxProductMonitor.Model.DadongProducts model;
+                FxProductMonitor.Model.XieProducts model;
                 for (int n = 0; n < rowsCount; n++)
                 {
                     model = dal.DataRowToModel(dt.Rows[n]);
@@ -160,14 +160,10 @@ namespace FxProductMonitor.BLL
         //{
         //return dal.GetList(PageSize,PageIndex,strWhere);
         //}
-        public FxProductMonitor.Model.DadongProducts GetModelByProductId(int id)
+
+        public FxProductMonitor.Model.XieProducts GetModelByProductId(int id)
         {
             return dal.GetModelByProductId(id);
-        }
-
-        public int GetModelId(int productId)
-        {
-            return dal.GetModelId(productId);
         }
 
         public void SetProductState()
