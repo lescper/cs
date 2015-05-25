@@ -6,7 +6,7 @@
 *
 * Ver    变更日期             负责人  变更内容
 * ───────────────────────────────────
-* V0.01  2015-03-17 14:04:36   N/A    初版
+* V0.01  2015-05-22 10:56:29   N/A    初版
 *
 * Copyright (c) 2012 Maticsoft Corporation. All rights reserved.
 *┌──────────────────────────────────┐
@@ -62,9 +62,9 @@ namespace FxProductMonitor.DAL
 		{
 			StringBuilder strSql=new StringBuilder();
 			strSql.Append("insert into ProductList(");
-			strSql.Append("productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum)");
+			strSql.Append("productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum,custFiled)");
 			strSql.Append(" values (");
-			strSql.Append("@productNo,@productName,@img,@isOnlinepay,@ticketCount,@salePrice,@cityName,@cutPrice,@marketPrice,@express,@orderDesc,@priceStartDate,@priceEndDate,@viewName,@viewLongitude,@viewLatitude,@viewAddress,@viewId,@interfaceId,@interfaceProdId,@state,@ProductState,@updateDate,@is_single,@isTaoBaoCode,@SettlementPrice,@StartNum)");
+			strSql.Append("@productNo,@productName,@img,@isOnlinepay,@ticketCount,@salePrice,@cityName,@cutPrice,@marketPrice,@express,@orderDesc,@priceStartDate,@priceEndDate,@viewName,@viewLongitude,@viewLatitude,@viewAddress,@viewId,@interfaceId,@interfaceProdId,@state,@ProductState,@updateDate,@is_single,@isTaoBaoCode,@SettlementPrice,@StartNum,@custFiled)");
 			strSql.Append(";select @@IDENTITY");
 			SqlParameter[] parameters = {
 					new SqlParameter("@productNo", SqlDbType.Int,4),
@@ -93,7 +93,8 @@ namespace FxProductMonitor.DAL
 					new SqlParameter("@is_single", SqlDbType.Int,4),
 					new SqlParameter("@isTaoBaoCode", SqlDbType.Int,4),
 					new SqlParameter("@SettlementPrice", SqlDbType.VarChar,50),
-					new SqlParameter("@StartNum", SqlDbType.Int,4)};
+					new SqlParameter("@StartNum", SqlDbType.Int,4),
+					new SqlParameter("@custFiled", SqlDbType.VarChar,1000)};
 			parameters[0].Value = model.productNo;
 			parameters[1].Value = model.productName;
 			parameters[2].Value = model.img;
@@ -121,6 +122,7 @@ namespace FxProductMonitor.DAL
 			parameters[24].Value = model.isTaoBaoCode;
 			parameters[25].Value = model.SettlementPrice;
 			parameters[26].Value = model.StartNum;
+			parameters[27].Value = model.custFiled;
 
 			object obj = DbHelperSQL.GetSingle(strSql.ToString(),parameters);
 			if (obj == null)
@@ -165,7 +167,8 @@ namespace FxProductMonitor.DAL
 			strSql.Append("is_single=@is_single,");
 			strSql.Append("isTaoBaoCode=@isTaoBaoCode,");
 			strSql.Append("SettlementPrice=@SettlementPrice,");
-			strSql.Append("StartNum=@StartNum");
+			strSql.Append("StartNum=@StartNum,");
+			strSql.Append("custFiled=@custFiled");
 			strSql.Append(" where id=@id");
 			SqlParameter[] parameters = {
 					new SqlParameter("@productNo", SqlDbType.Int,4),
@@ -195,6 +198,7 @@ namespace FxProductMonitor.DAL
 					new SqlParameter("@isTaoBaoCode", SqlDbType.Int,4),
 					new SqlParameter("@SettlementPrice", SqlDbType.VarChar,50),
 					new SqlParameter("@StartNum", SqlDbType.Int,4),
+					new SqlParameter("@custFiled", SqlDbType.VarChar,1000),
 					new SqlParameter("@id", SqlDbType.Int,4)};
 			parameters[0].Value = model.productNo;
 			parameters[1].Value = model.productName;
@@ -223,7 +227,8 @@ namespace FxProductMonitor.DAL
 			parameters[24].Value = model.isTaoBaoCode;
 			parameters[25].Value = model.SettlementPrice;
 			parameters[26].Value = model.StartNum;
-			parameters[27].Value = model.id;
+			parameters[27].Value = model.custFiled;
+			parameters[28].Value = model.id;
 
 			int rows=DbHelperSQL.ExecuteSql(strSql.ToString(),parameters);
 			if (rows > 0)
@@ -287,7 +292,7 @@ namespace FxProductMonitor.DAL
 		{
 			
 			StringBuilder strSql=new StringBuilder();
-			strSql.Append("select  top 1 id,productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum from ProductList ");
+			strSql.Append("select  top 1 id,productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum,custFiled from ProductList ");
 			strSql.Append(" where id=@id");
 			SqlParameter[] parameters = {
 					new SqlParameter("@id", SqlDbType.Int,4)
@@ -427,6 +432,10 @@ namespace FxProductMonitor.DAL
 				{
 					model.StartNum=int.Parse(row["StartNum"].ToString());
 				}
+				if(row["custFiled"]!=null)
+				{
+					model.custFiled=row["custFiled"].ToString();
+				}
 			}
 			return model;
 		}
@@ -437,7 +446,7 @@ namespace FxProductMonitor.DAL
 		public DataSet GetList(string strWhere)
 		{
 			StringBuilder strSql=new StringBuilder();
-			strSql.Append("select id,productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum ");
+			strSql.Append("select id,productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum,custFiled ");
 			strSql.Append(" FROM ProductList ");
 			if(strWhere.Trim()!="")
 			{
@@ -457,7 +466,7 @@ namespace FxProductMonitor.DAL
 			{
 				strSql.Append(" top "+Top.ToString());
 			}
-			strSql.Append(" id,productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum ");
+			strSql.Append(" id,productNo,productName,img,isOnlinepay,ticketCount,salePrice,cityName,cutPrice,marketPrice,express,orderDesc,priceStartDate,priceEndDate,viewName,viewLongitude,viewLatitude,viewAddress,viewId,interfaceId,interfaceProdId,state,ProductState,updateDate,is_single,isTaoBaoCode,SettlementPrice,StartNum,custFiled ");
 			strSql.Append(" FROM ProductList ");
 			if(strWhere.Trim()!="")
 			{
@@ -538,6 +547,9 @@ namespace FxProductMonitor.DAL
 			parameters[6].Value = strWhere;	
 			return DbHelperSQL.RunProcedure("UP_GetRecordByPage",parameters,"ds");
 		}*/
+
+		#endregion  BasicMethod
+		#region  ExtensionMethod
         public int SetProductState()
         {
             string sql = "update ProductList set ProductState=0";
@@ -563,9 +575,6 @@ namespace FxProductMonitor.DAL
                 return -1;
             }
         }
-		#endregion  BasicMethod
-		#region  ExtensionMethod
-
 		#endregion  ExtensionMethod
 	}
 }

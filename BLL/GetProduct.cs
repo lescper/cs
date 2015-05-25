@@ -25,6 +25,9 @@ namespace FxProductMonitor.BLL
             var sr = new StreamReader(dataStream);
             var data = sr.ReadToEnd();
 
+            //FxProductMonitor.BLL.EasyApi easy = new EasyApi();
+            //string easyResult = easy.Perform("http://fx.henghengw.net/api/list_hh.jsp", "JSESSIONID=e1tFW2opYihf; dc4e01dbca1cd374ffb9068b31380fc2=2csFVZj9GauFmbsVTPmEHb0l2XklSPjZXd0N2XklTPzITMzcyNpZ1c39GaslTZw0mJ1N3cfRHdwlTZz0mJfd3YzVFdp9DZy0zM3EzMmcXdlNlcu9WYl1ePfe+suWut6WOh6SOq6SOq9eek7eOnneekKaOgcaeiZmOkFWOrPWCupZ1cn9mc19Dcw0mJzl2XpR3c9ASMkZlYs9War5XPhNXYwMCOyZ2blx2XklTPmMXdlNlcp9DZi13bldjb1ATMmM", "fx.henghengw.net", url.Replace("http://fx.henghengw.net", ""), "http://fx.henghengw.net");
+            //var data = easyResult;
             data = data.Substring(data.IndexOf("</status><products>", StringComparison.Ordinal) + "</status><products>".Length);
             data = data.Replace("<product>", "<ProductList>");
             data = data.Replace("</product>", "</ProductList>");

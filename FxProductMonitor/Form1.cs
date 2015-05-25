@@ -33,7 +33,6 @@ namespace FxProductMonitor
 
         private void button1_Click(object sender, EventArgs e)
         {
-            notifyIcon1.Dispose();
             PostQuitMessage(0);
             Environment.Exit(0);
             Application.Exit();
@@ -115,29 +114,33 @@ namespace FxProductMonitor
         }
 
 
-        private delegate void SetTextBoxValue(string value);
+        //private delegate void SetTextBoxValue(string value);
         private void SetTextValue(string value)
         {
-            if (richTextBox1.InvokeRequired)
-            {
-                var objSetTextValue = new SetTextBoxValue(SetTextValue);
-                var result = richTextBox1.BeginInvoke(objSetTextValue, new object[] { value });
-                try
-                {
-                    objSetTextValue.EndInvoke(result);
-                }
-                catch (Exception ex)
-                {
+            //if (richTextBox1.InvokeRequired)
+            //{
+            //    var objSetTextValue = new SetTextBoxValue(SetTextValue);
+            //    var result = richTextBox1.BeginInvoke(objSetTextValue, new object[] { value });
+            //    try
+            //    {
+            //        objSetTextValue.EndInvoke(result);
+            //    }
+            //    catch (Exception ex)
+            //    {
 
-                }
-            }
-            else
-            {
-                value = "【" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "】" + value;
-                richTextBox1.Text += value + Environment.NewLine;
-                richTextBox1.SelectionStart = richTextBox1.TextLength;
-                richTextBox1.ScrollToCaret();
-            }
+            //    }
+            //}
+            //else
+            //{
+            //    //value = "【" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "】" + value;
+            //    richTextBox1.Text += value + Environment.NewLine;
+            //    richTextBox1.SelectionStart = richTextBox1.TextLength;
+            //    richTextBox1.ScrollToCaret();
+            //}
+
+            IntPtr pHandle = FindWindow(null, "产品同步系统");
+            PostMessage(pHandle, 99, Marshal.StringToHGlobalAnsi(value), IntPtr.Zero);
+
         }
         //文本框显示消息
 
@@ -160,7 +163,7 @@ namespace FxProductMonitor
         private void button2_Click_1(object sender, EventArgs e)
         {
             button2.Enabled = false;
-            #region 同程
+
             var handle = CreateThread(IntPtr.Zero, 0, TongchengProducts, IntPtr.Zero, 0, 0);
             UInt32 exitCode = 9999;
             GetExitCodeThread((IntPtr)handle, out exitCode);
@@ -169,9 +172,9 @@ namespace FxProductMonitor
                 Application.DoEvents();
                 GetExitCodeThread((IntPtr)handle, out exitCode);
             }
-            #endregion
 
-            #region 美景联动
+
+
             var getUtsThread = new Thread(GetUtsProduct);
             getUtsThread.Start();
             while (getUtsThread.ThreadState != ThreadState.Stopped)
@@ -179,9 +182,9 @@ namespace FxProductMonitor
                 Application.DoEvents();
             }
             SetTextValue("美景联动数据更新结束。");
-            #endregion
 
-            #region 大东票务
+
+
             var getDadongThread = new Thread(GetDadongProduct);
             getDadongThread.Start();
             while (getDadongThread.ThreadState != ThreadState.Stopped)
@@ -189,9 +192,9 @@ namespace FxProductMonitor
                 Application.DoEvents();
             }
             SetTextValue("大东票务数据更新结束。");
-            #endregion
 
-            #region 远帆票务
+
+
             var getYFThread = new Thread(GetYuanFanProducts);
             getYFThread.Start();
             while (getYFThread.ThreadState != ThreadState.Stopped)
@@ -199,24 +202,25 @@ namespace FxProductMonitor
                 Application.DoEvents();
             }
             SetTextValue("远帆票务数据更新结束。");
-            #endregion
 
-            #region 谢谢票务
+
+
             GetXieProducts();
             SetTextValue("谢谢票务操作完成。");
-            #endregion
 
-            #region 更新产品
+
+
             GetProductApi();
             SetTextValue("获取产品结束。");
-            #endregion
 
-            #region 价格日期
+
+
             GetProductInfo();
             SetTextValue("获取价格日期结束。");
-            #endregion
 
-            #region 对比产品
+            GetProductDetail();
+
+
             var compareThread = new Thread(CompareProduct);
             compareThread.Start();
             while (compareThread.ThreadState != ThreadState.Stopped)
@@ -224,11 +228,10 @@ namespace FxProductMonitor
                 Application.DoEvents();
             }
             SetTextValue("产品对比已完成。");
-            #endregion
 
-            #region 发送邮件
+
             SendMail();
-            #endregion
+
 
             button2.Enabled = true;
         }
@@ -268,7 +271,6 @@ namespace FxProductMonitor
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            notifyIcon1.Dispose();
             Environment.Exit(0);
         }
 
@@ -422,7 +424,6 @@ namespace FxProductMonitor
                 }
             }
             var recordCount = productListBll.GetRecordCount("ProductState=0");
-            SetTextValue("产品下架数量：" + recordCount.ToString(CultureInfo.InvariantCulture));
             var prodList = productListBll.GetModelList("ProductState=0");
             var logBll = new BLL.logs();
             foreach (var m in prodList)
@@ -484,7 +485,7 @@ namespace FxProductMonitor
         {
             if (WindowState == FormWindowState.Minimized)
             {
-                this.Hide();
+                //this.Hide();
             }
         }
 
@@ -525,7 +526,9 @@ namespace FxProductMonitor
                                     errLogBll.Add(errLog);
                                     break;
                                 }
-                                Compare(ticketsModel.agentPrice, Convert.ToInt32(ticketsModel.reserveBeforeDays), ticketsModel.startSellDate, ticketsModel.effectiveEndDate, ticketsModel.isRealName, model, "同程", ticketsModel.exceptDate, ticketsModel.stopSellDate);
+                                bool needIdCard = false;
+                                if (ticketsModel.isNeedIdCard == "True") needIdCard = true;
+                                Compare(ticketsModel.agentPrice, Convert.ToInt32(ticketsModel.reserveBeforeDays), ticketsModel.startSellDate, ticketsModel.effectiveEndDate, ticketsModel.isRealName, model, "同程", ticketsModel.exceptDate, ticketsModel.stopSellDate, needIdCard);
                                 totalCount++;
                                 break;
                                 #endregion
@@ -547,7 +550,7 @@ namespace FxProductMonitor
                                     errLogBll.Add(errLog);
                                     break;
                                 }
-                                Compare(mjldModel.SettlementPrice, 0, mjldModel.ActDate, mjldModel.RequireDate, "", model, "美景联动", "", "");
+                                Compare(mjldModel.SettlementPrice, 0, mjldModel.ActDate, mjldModel.RequireDate, "", model, "美景联动", "", "", false);
                                 break;
                                 #endregion
                             }
@@ -568,7 +571,7 @@ namespace FxProductMonitor
                                     errLogBll.Add(errLog);
                                     break;
                                 }
-                                Compare(yfpwModel.product_platformvalue, 0, yfpwModel.product_start, yfpwModel.product_end, "", model, "远帆票务", "", "");
+                                Compare(yfpwModel.product_platformvalue, 0, yfpwModel.product_start, yfpwModel.product_end, "", model, "远帆票务", "", "", false);
                                 break;
                                 #endregion
                             }
@@ -588,7 +591,7 @@ namespace FxProductMonitor
                                     errLogBll.Add(errLog);
                                     break;
                                 }
-                                Compare(dadongModel.product_platformValue, 0, "", dadongModel.product_expireTime, "", model, "大东票务", "", "");
+                                Compare(dadongModel.product_platformValue, 0, "", dadongModel.product_expireTime, "", model, "大东票务", "", "", false);
                                 break;
                                 #endregion
                             }
@@ -624,7 +627,7 @@ namespace FxProductMonitor
                                 {
                                     stopSellTime = DateTime.Now.AddYears(10).ToString("yyyy-MM-dd");
                                 }
-                                Compare(selelPrice, 0, "", expiredTime, "", model, "谢谢网", "", stopSellTime);
+                                Compare(selelPrice, 0, "", expiredTime, "", model, "谢谢网", "", stopSellTime, false);
                                 break;
 
                                 #endregion
@@ -634,7 +637,7 @@ namespace FxProductMonitor
             }
         }
 
-        public void Compare(string settlementPrice, int startNum, string startDate, string endDate, string isSingle, ProductList model, string name, string excptDate, string stopSellDate)
+        public void Compare(string settlementPrice, int startNum, string startDate, string endDate, string isSingle, ProductList model, string name, string excptDate, string stopSellDate, bool isNeedIdCard)
         {
 
             var logBll = new BLL.logs();
@@ -724,6 +727,20 @@ namespace FxProductMonitor
                 logsModel.related_product += "，【产品名称】：" + model.productName;
                 logBll.Add(logsModel);
             }
+
+            if (isNeedIdCard)
+            {
+                if (model.custFiled.IndexOf("link_credit_no") < 0)
+                {
+                    logsModel = new logs();
+                    logsModel.log_category = 22;
+                    logsModel.log_date = DateTime.Now;
+                    logsModel.log_text = "【" + name + "】需要身份证号。";
+                    logsModel.related_product = "【产品编号】：" + model.productNo.ToString() + "，【产品名称】：" + model.productName;
+                    logBll.Add(logsModel);
+                }
+            }
+
 
             if (!string.IsNullOrEmpty(excptDate))
             {
@@ -938,6 +955,19 @@ namespace FxProductMonitor
                 strTxt = log.Where(x => x.log_category == 6).Aggregate(strTxt, (current, logModel) => current + (logModel.related_product += "，" + logModel.log_text + "\r\n"));
                 strTxt += "\r\n";
             }
+            if (log.Any(x => x.log_category == 20))
+            {
+                strTxt += "【未绑定景区】：\r\n";
+                strTxt = log.Where(x => x.log_category == 20).Aggregate(strTxt, (current, logModel) => current + (logModel.related_product += "," + logModel.log_text + "\r\n"));
+                strTxt += "\r\n";
+            }
+            if (log.Any(x => x.log_category == 22))
+            {
+                strTxt += "【需要身份证】：\r\n";
+                strTxt = log.Where(x => x.log_category == 22).Aggregate(strTxt, (current, logModel) => current + (logModel.related_product += "," + logModel.log_text + "\r\n"));
+                strTxt += "\r\n";
+            }
+
             logBll.SetLogState();
 
             //获取最新的产品并保存到文本文件
@@ -945,11 +975,13 @@ namespace FxProductMonitor
             strTxt = strTxt.Replace("\r\n", "\r\n<br />");
             strTxt = strTxt.Replace("【产品编号】：", "");
             strTxt = strTxt.Replace("【产品名称】：", "");
+            strTxt = strTxt.Replace("需要身份证号。", "。");
 
             string attachments = "";
             attachments = "yuanfan.txt;xiexie.txt;meijing.txt;dadong.txt;tongcheng.txt";
             var mail = new SendMail();
             mail.Send("<p style=\"color:Red;font-size:24px;\">附件为各个系统最新的产品</p>\r\n" + strTxt, "2405192532@qq.com;499006486@qq.com", attachments);
+            //mail.Send("<p style=\"color:Red;font-size:24px;\">附件为各个系统最新的产品</p>\r\n" + strTxt, "", attachments);
         }
 
         public string GetMd5(string str)
@@ -1108,17 +1140,58 @@ namespace FxProductMonitor
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
         static extern IntPtr SendMessage(IntPtr hWnd, UInt32 Msg, int wParam, int lParam);
 
+        [DllImport("kernel32", SetLastError = true, CharSet = CharSet.Ansi)]
+        static extern IntPtr LoadLibrary([MarshalAs(UnmanagedType.LPStr)]string lpFileName);
+
+        [DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+        static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+
+        [DllImport("GetUrl.dll", CallingConvention = CallingConvention.StdCall, SetLastError = true, EntryPoint = "Perform")]
+        static extern string Perform(string url, string cookie, string host, string getUrl, string referer);
+        // For Windows Mobile, replace user32.dll with coredll.dll
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
+        [return: MarshalAs(UnmanagedType.Bool)]
+        [DllImport("user32.dll", SetLastError = true)]
+        static extern bool PostMessage(IntPtr hWnd, uint Msg, IntPtr wParam, IntPtr lParam);
+
+
+        protected override void WndProc(ref Message m)
+        {
+            switch (m.Msg)
+            {
+                case 99:
+                    {
+                        //SetTextValue(Marshal.PtrToStringAnsi(m.WParam));
+                        string text = Marshal.PtrToStringAnsi(m.WParam);
+                        richTextBox1.Text += text;
+                        richTextBox1.Text += Environment.NewLine;
+                        richTextBox1.SelectionStart = richTextBox1.TextLength;
+                        richTextBox1.ScrollToCaret();
+                        Marshal.FreeHGlobal(m.WParam);
+                        break;
+                    }
+
+                default:
+                    {
+                        base.WndProc(ref m);
+                        break;
+                    }
+            }
+
+        }
+        //public delegate string Perform(string url, string cookie, string host, string getUrl, string referer);
         private void button6_Click(object sender, EventArgs e)
         {
-            //MessageBox.Show("【同程】已下架。".Substring(0, "【同程】已下架。".IndexOf("】") + 1)); return;
-            //IntPtr pHandle = GetCurrentProcess();
-            //SetProcessWorkingSetSize(pHandle, -1, -1);
-            GetDadongProduct();
+            IntPtr pHandle = FindWindow(null, "产品同步系统");
+
+            PostMessage(pHandle, 99, Marshal.StringToHGlobalAnsi("text"), IntPtr.Zero);
         }
 
         [DllImport("wininet.dll", CharSet = CharSet.Auto, SetLastError = true)]
         static extern bool InternetSetCookie(string lpszUrl, string lpszCookieName, string lpszCookieData);
-
         [DllImport("KERNEL32.DLL ")]
         public static extern IntPtr CreateToolhelp32Snapshot(uint flags, uint processid);
         [DllImport("KERNEL32.DLL ")]
@@ -1128,14 +1201,9 @@ namespace FxProductMonitor
         [DllImport("KERNEL32.DLL ")]
         public static extern int Process32Next(IntPtr handle, ref   ProcessEntry32 pe);
         [DllImport("kernel32.dll")]
-        public static extern IntPtr OpenProcess(
-            int processAccess,
-            bool bInheritHandle,
-            uint processId
-        );
+        public static extern IntPtr OpenProcess(int processAccess, bool bInheritHandle, uint processId);
         [DllImport("psapi.dll", SetLastError = true)]
         public static extern bool GetProcessMemoryInfo(IntPtr hProcess, out PROCESS_MEMORY_COUNTERS Memcounters, int size);
-
         [DllImport("advapi32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool OpenProcessToken(IntPtr ProcessHandle,
@@ -1347,7 +1415,6 @@ namespace FxProductMonitor
                     Marshal.FreeHGlobal(temp);
                     list.Add(pe);
                     bMore = Process32Next(handle, ref pe32);
-
                 }
 
                 IntPtr hToken;
@@ -1385,5 +1452,46 @@ namespace FxProductMonitor
                 }
             }
         }
+
+        public void GetProductDetail()
+        {
+            List<ProductList> list = new List<ProductList>();
+            FxProductMonitor.BLL.ProductList productDetailBll = new BLL.ProductList();
+            list = productDetailBll.GetModelList("");
+            string url = "http://fx.henghengw.net/api/detail.jsp?custId=233286&apikey=8411B4D5B6A600FCB6FBD217E3DD2E21";
+            FxProductMonitor.BLL.EasyApi easy = new EasyApi();
+            Thread[] getProductThread = new Thread[list.Count];
+            int i = 0;
+            foreach (var model in list)
+            {
+                if (string.IsNullOrEmpty(model.viewName) || model.viewName == "2014-01-01")
+                {
+                    logs logModel = new logs();
+                    logModel.related_product = "【产品编号】：" + model.productNo.ToString() + "，【产品名称】" + model.productName;
+                    logModel.log_text = "未绑定景区";
+                    logModel.log_date = DateTime.Now;
+                    logModel.log_category = 20;
+                    FxProductMonitor.BLL.logs logBll = new BLL.logs();
+                    logBll.Add(logModel);
+                    continue;
+                }
+                FxProductMonitor.BLL.GetProductDetail de = new BLL.GetProductDetail();
+                de.model = model;
+                getProductThread[i] = new Thread(new ThreadStart(de.GetCustFiled));
+                getProductThread[i].Start();
+                i++;
+                //string productData = easy.Perform("http://fx.henghengw.net", "", "fx.henghengw.net", tempUrl.Replace("http://fx.henghengw.net", ""), "http://fx.henghengw.net");
+            }
+
+            foreach (var t in getProductThread)
+            {
+                while (t != null && t.ThreadState != ThreadState.Stopped)
+                {
+                    Application.DoEvents();
+                }
+            }
+        }
+
+
     }
 }

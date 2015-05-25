@@ -52,7 +52,9 @@
     <Compile Include="GetHtml.cs" />
     <Compile Include="GetPrice.cs" />
     <Compile Include="GetProduct.cs" />
+    <Compile Include="GetProductDetail.cs" />
     <Compile Include="GetProductInfo.cs" />
+    <Compile Include="GetUrl.cs" />
     <Compile Include="logs.cs" />
     <Compile Include="MJLDProducts.cs" />
     <Compile Include="ProductList.cs" />
